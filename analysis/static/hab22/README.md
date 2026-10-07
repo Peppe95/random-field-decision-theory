@@ -14,6 +14,6 @@ Two architectures must remain distinct:
 
 Their absolute MSEs are therefore not interchangeable.
 
-Task folds are the upstream stored `crossValidation_id` values. Five participant folds are recreated within each context using the embedded R-compatible `set.seed(123)` algorithm. Participant-level fold assignments, parameters and predictions are deliberately not redistributed. `hab22_participant_fold_counts.csv` records aggregate counts by context/fold.
+Task folds are the upstream stored `crossValidation_id` values. `hab22_task_fold_indices.csv` records the exact assignment keyed by the zero-based position in the lexicographically sorted unique upstream `task_id` values; the runner reconstructs the identifiers from the source archive. Five participant folds are recreated within each context using the embedded R-compatible `set.seed(123)` algorithm. Participant-level fold assignments, parameters and predictions are deliberately not redistributed. `hab22_participant_fold_counts.csv` records aggregate counts by context/fold.
 
 Saved final configuration is in `analysis_spec.json`.
