@@ -1,0 +1,11 @@
+{
+  "source_name": "run_rfdt_phase2b_recovery_v3.py",
+  "source_sha256": "1801f46d96479059ee20af01e24e8963f9e31a172c2c13ed921489ec090c2cc5",
+  "extracted_function_sha256": {
+    "_stable_logistic2": "8b08c2ef7881a53a74ac8025818267439a4db3759216fc0bd21589c14c5639b3",
+    "_sample_multinomial_seq": "b03e94c6f1bc3d68ed28254b41c8d0b1ca75ae286db1034ea0f8288905a2fa13",
+    "_rho_for_spin": "f4fb0092eada5ccbf28e70de277aa17f4fc6ba891a3b1016efd26fed4f77e6a7",
+    "_simulate_one_trial": "52e43fedb1f90560008ce104abadab3d7ab14990836db8e211bd23c7cf2959a7"
+  },
+  "change": "header only; function bodies and decorators unchanged"
+}
