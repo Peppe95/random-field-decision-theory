@@ -1,0 +1,27 @@
+{
+  "status": "FINAL HAB22 development-set specification after the prespecified signed-power extension and a training-only rho-boundary audit; HAB22 is not an untouched external confirmation of RFDT-P",
+  "utility": "u_rho(x)=sign(x)|x|^rho",
+  "rho_bounds": [0.05, 1.5],
+  "rho_domain_rationale": "lower numerical bound opened from 0.25 to 0.05 solely because the prior HAB22 training-only boundary audit showed interior optima just below 0.25; no held-out outcomes were consulted for this change",
+  "utility_scale": "for every rho, divide comparative evidence by dataset-wide median task RMS(D_rho), using stimuli only; median=1",
+  "sampling": "independent/product hypothetical sampling",
+  "readout": "P(B)=logistic(lambda*m_star)",
+  "structural_regime": "0 <= kappa < 1",
+  "numerical_kappa_upper": 0.995,
+  "bounds": {"alpha":[0.0,1.0],"beta":[0.05,4.0],"kappa":[0.0,0.995],"lam":[0.1,8.0],"rho":[0.05,1.5]},
+  "task_folds": "stored 10 crossValidation_id folds",
+  "participant_folds": "exact Plonsky set.seed(123) 5-fold recreation within context",
+  "training": "task fold != test AND participant fold != test",
+  "test": "task fold == test AND participant fold == test",
+  "training_objective": "binomial NLL on training task counts",
+  "power_models": ["RFDT-P","RFDT-P rho=1","RFDT-P kappa=0","RFDT-P alpha=0","RFDT-P alpha=1"],
+  "comparators": "same 60 stored behavioral models + BEAST + stored BEAST-GB",
+  "no_test_tuning": true,
+  "targeted_lowrho_recovery": {
+    "rho_truths": [0.15,0.22,0.3],
+    "n_structural_settings": 6,
+    "purpose": "verify local recovery in the newly admitted low-rho region and around the HAB22 fitted neighborhood; synthetic outcomes only"
+  },
+  "individual_average_sensitivity": true,
+  "interpretation_rule": "This closes HAB22 model development. No further static RFDT functional changes will be selected from HAB22. Choices13k is the first external test of this frozen RFDT-P specification."
+}
