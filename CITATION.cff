@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite the RFDT paper and the archived software release."
+title: "Random Field Decision Theory: reproducibility materials"
+type: software
+authors:
+  - family-names: Ferro
+    given-names: Giuseppe M.
+  - family-names: Sornette
+    given-names: Didier
+repository-code: "https://github.com/Peppe95/random-field-decision-theory"
+license: MIT
