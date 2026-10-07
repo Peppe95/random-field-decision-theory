@@ -282,3 +282,4 @@ def _simulate_one_trial(d, probs, K, alpha, beta, kappa,
         # Floating-point cumulative-rounding fallback: simply continue.
         # It should be vanishingly rare and does not change state.
     return 0, max_time
+
