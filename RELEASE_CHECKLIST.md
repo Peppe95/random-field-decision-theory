@@ -25,7 +25,7 @@ These settings are changed from the repository's **About** panel:
 ## Archival release
 
 - [x] Deposit the large dynamic numerical archive separately and record its persistent identifier: https://doi.org/10.5281/zenodo.23213576
-- [ ] Create GitHub tag/release `v1.0.0`.
-- [ ] Archive that tagged software release and record its DOI in `CITATION.cff` and `README.md`.
-- [ ] Add `version` and `date-released` to `CITATION.cff` at release time.
+- [x] Create GitHub tag/release `v1.0.0`.
+- [x] Archive that tagged software release and record its DOI in `CITATION.cff` and `README.md`: https://doi.org/10.5281/zenodo.23213829
+- [x] Add `version` and `date-released` to `CITATION.cff` at release time.
 - [ ] Add the paper as `preferred-citation` once the article has a stable citation/DOI.
