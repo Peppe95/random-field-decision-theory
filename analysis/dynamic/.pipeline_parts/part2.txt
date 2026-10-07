@@ -1,0 +1,100 @@
+            print('  %s global %d/%d (index %d): %.1fs; %.1f min elapsed; approx %.1f min remaining'%(
+                    model,done,len(idx),gi,time.time()-t,(time.time()-model_start)/60,rate*(len(idx)-done)/60),flush=True)
+        print('  completed',model,flush=True)
+    marker=run/'atlases'/level/batch/'ATLAS_COMPLETE.json'
+    dump_json(marker,{'level':level,'batch':batch,'paths':paths,'phase':phase,
+                     'selected_globals':{k:sorted(v) for k,v in selected.items()} if selected else 'all',
+                     'seconds_this_invocation':time.time()-start_all,'source_hashes':sources()})
+    print('Atlas stage complete:',marker,flush=True)
+
+
+def joint_for(run,level,batches,model,g,h,cutoffs,mass):
+    if model=='DDM':
+        with np.load(Path(run)/'atlases'/level/'DDM.npz') as z:return z['joint']
+    if isinstance(batches,str):batches=[batches]
+    counts=None
+    for b in batches:
+        with np.load(count_path(run,level,b,model,g)) as z:
+            c=z['counts'].astype(np.uint64)
+            if np.any(z['unresolved']):raise ValueError('Unresolved counts cannot enter a likelihood.')
+            counts=c if counts is None else counts+c
+    return core.joint_from_counts(counts,core.rfdt_base_measure(h,cutoffs),mass)
+
+
+def fit_root(run,level,batch,sample,target,model):
+    return Path(run)/'fits'/level/batch/target/sample/model
+
+
+def _fit_global_job(job):
+    run,level,batch,sample,target,model,gi=job
+    with threadpool_limits(limits=1):
+        run,config,design,folds,cuts=read_run(run)
+        gd,h,X=read_bank(run,level,model)
+        data=load_sample(run,sample,design,folds,cuts)
+        events=data['events'][target]
+        q=core.for_target(joint_for(run,level,batch,model,gi,h,cuts,config['smoothing']['total_pseudocount_mass']),target)
+        dest=fit_root(run,level,batch,sample,target,model)/('g%04d'%gi)
+        dest.mkdir(parents=True,exist_ok=True)
+        for fold in range(7):
+            objfile=dest/('fold%d.npz'%fold);diagfile=dest/('fold%d.json'%fold)
+            if objfile.exists() and diagfile.exists():
+                diag=load_json(diagfile)
+                if not diag['kkt_pass']:raise RuntimeError('Stored optimization failed diagnostic: '+str(diagfile))
+                continue
+            L=core.training_likelihood(q,events,folds,fold)
+            theta,post,ln,diag=core.fit_finite_bank(L,X,config['eb'])
+            train_n=(events[:,folds!=fold]>=0).sum(axis=1)
+            prior=np.exp(core.log_prior(X,theta))
+            # Full float64 conditional nuisance weights, including participants
+            # with zero training rows. No rounded parameter summary substitutes.
+            atomic_npz(objfile,theta=theta,posterior=post,prior=prior,
+                       participant_log_marginal=ln,train_counts=train_n,
+                       score=np.array(ln.sum()),global_index=np.array(gi),fold=np.array(fold))
+            diag.update({'sample':sample,'target':target,'model':model,'global_index':gi,'fold':fold,
+                         'object_sha256':sha(objfile),'candidate_invariants':core.check_joint(q)})
+            dump_json(diagfile,diag)
+            if not diag['kkt_pass']:
+                raise RuntimeError('Finite-bank optimizer did not satisfy KKT tolerance. '+str(diagfile)+
+                                   ' preserved; no held-out score should be interpreted.')
+        return gi
+
+
+def _collect_globals(run,level,batch,sample,target,model):
+    g,h,X=read_bank(run,level,model)
+    scores=np.empty((7,len(g)),float)
+    for gi in range(len(g)):
+        for f in range(7):
+            p=fit_root(run,level,batch,sample,target,model)/('g%04d'%gi)/('fold%d.npz'%f)
+            with np.load(p) as z:scores[f,gi]=float(z['score'])
+    logprior=np.log(g.global_prior_mass.to_numpy(float))
+    logw=scores+logprior[None,:]
+    logw-=logsumexp(logw,axis=1)[:,None]
+    w=np.exp(logw);w/=w.sum(axis=1,keepdims=True)
+    p=fit_root(run,level,batch,sample,target,model)/'global_weights.npz'
+    atomic_npz(p,weights=w,logweights=logw,scores=scores,prior=g.global_prior_mass.to_numpy(float))
+    rows=[]
+    for f in range(7):
+        for gi,row in g.iterrows():
+            rows.append({'fold':f,'global_index':gi,'weight':float(w[f,gi]),'logweight':float(logw[f,gi]),
+                         'train_log_marginal':float(scores[f,gi]),**row.to_dict()})
+    pd.DataFrame(rows).to_csv(p.with_suffix('.csv'),index=False)
+    return w
+
+
+def predict_with_weights(run,level,fit_batch,sample,target,model,count_batches,outfile,mass=None):
+    run,config,design,folds,cuts=read_run(run)
+    gd,h,X=read_bank(run,level,model)
+    data=load_sample(run,sample,design,folds,cuts);events=data['events'][target]
+    n,P=events.shape
+    if mass is None:mass=config['smoothing']['total_pseudocount_mass']
+    root=fit_root(run,level,fit_batch,sample,target,model)
+    with np.load(root/'global_weights.npz') as z:w=z['weights']
+    pred=np.zeros((n,P,14),float)
+    active=np.flatnonzero(np.any(w>0,axis=0))
+    for gi in active:
+        q=core.for_target(joint_for(run,level,count_batches,model,gi,h,cuts,mass),target)
+        for fold in range(7):
+            if w[fold,gi]==0:continue
+            with np.load(root/('g%04d'%gi)/('fold%d.npz'%fold)) as z:post=z['posterior']
+            for j in np.flatnonzero(folds==fold):
+                idx=np.flatnonzero(events[:,j]>=0)
