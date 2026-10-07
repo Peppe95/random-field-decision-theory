@@ -12,7 +12,7 @@
 - [x] Third-party participant data are excluded from Git and documented in `DATA_SOURCES.md`.
 - [x] Dynamic numerical limitations are retained in `provenance/NUMERICAL_STATUS.md`.
 - [x] The large dynamic archive has a recorded SHA-256.
-- [ ] Confirm the repository CI passes with the restored dynamic source.
+- [x] Repository CI passes with the restored dynamic source.
 
 ## GitHub metadata
 
