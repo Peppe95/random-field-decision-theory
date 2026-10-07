@@ -66,7 +66,7 @@ SHA-256:
 
 `737500db81b9da24a46d05eea4c5864a3dd4ac494470ceb38b6a74cab168dc73`
 
-It will be deposited as a separate archival artifact and linked from the first tagged release.
+Archived numerical artifact: https://doi.org/10.5281/zenodo.23213576
 
 The numerical comparisons are reported together with their failed as well as passed accuracy diagnostics; see [provenance/NUMERICAL_STATUS.md](provenance/NUMERICAL_STATUS.md).
 
@@ -82,7 +82,7 @@ A successful figure rebuild is not a refit, and a successful consistency check i
 
 ## Archival release
 
-The first tagged release will be archived together with a separate record for the large numerical artifact. The remaining release steps are listed in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+The large numerical artifact is archived at https://doi.org/10.5281/zenodo.23213576. The first tagged software release will receive a separate Zenodo DOI. The remaining release steps are listed in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## License
 
