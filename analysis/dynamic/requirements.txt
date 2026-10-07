@@ -1,0 +1,1 @@
+numpy>=1.22\nscipy>=1.8\npandas>=1.4\nnumba>=0.56\nthreadpoolctl>=3.1\nmpmath>=1.2\n
