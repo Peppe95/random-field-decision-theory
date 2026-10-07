@@ -1,0 +1,200 @@
+            if h >= 0.0:
+                hit_dt = h
+                hit_choice = -1
+
+        total = 0.0
+
+        # Spin-flip rates. Heat-bath uses m_{-i}.
+        for k in range(K):
+            # Current sigma=-1 -> +1.
+            m_minus_i = (S + 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            total += (Pm[k] + Am[k]) * p_plus
+
+            # Current sigma=+1 -> -1.
+            m_minus_i = (S - 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            total += (Pp[k] + Ap[k]) * (1.0 - p_plus)
+
+        # Adaptive field-refresh state changes.
+        if r_adapt > 0.0 and NA > 0:
+            for k in range(K):
+                if Am[k] > 0:
+                    total += Am[k] * r_adapt * (1.0 - rho_m[k])
+                if Ap[k] > 0:
+                    total += Ap[k] * r_adapt * (1.0 - rho_p[k])
+
+        if total <= 0.0:
+            if hit_dt < 1e299 and t + hit_dt <= max_time:
+                return hit_choice, t + hit_dt
+            return 0, max_time
+
+        dt = -math.log(max(np.random.random(), 1e-300)) / total
+
+        # First passage occurs before the next state-changing event.
+        if hit_dt <= dt and t + hit_dt <= max_time:
+            return hit_choice, t + hit_dt
+
+        if t + dt > max_time:
+            Z += m * (max_time - t)
+            return 0, max_time
+
+        Z += m * dt
+        t += dt
+
+        # Select one state-changing event.
+        u = np.random.random() * total
+        cum = 0.0
+        done = False
+
+        for k in range(K):
+            # Persistent: - -> +
+            m_minus_i = (S + 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            cum += Pm[k] * p_plus
+            if u < cum:
+                Pm[k] -= 1
+                Pp[k] += 1
+                S += 2
+                done = True
+                break
+
+            # Persistent: + -> -
+            m_minus_i = (S - 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            cum += Pp[k] * (1.0 - p_plus)
+            if u < cum:
+                Pp[k] -= 1
+                Pm[k] += 1
+                S -= 2
+                done = True
+                break
+
+            # Adaptive spin: - -> +
+            m_minus_i = (S + 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            cum += Am[k] * p_plus
+            if u < cum:
+                Am[k] -= 1
+                Ap[k] += 1
+                S += 2
+                done = True
+                break
+
+            # Adaptive spin: + -> -
+            m_minus_i = (S - 1.0) / float(N)
+            p_plus = _stable_logistic2(kappa * m_minus_i + beta * d[k])
+            cum += Ap[k] * (1.0 - p_plus)
+            if u < cum:
+                Ap[k] -= 1
+                Am[k] += 1
+                S -= 2
+                done = True
+                break
+
+        if done:
+            continue
+
+        # Adaptive field refresh. Aggregate rate excludes self-resampling;
+        # conditional destination is sampled from rho excluding current k.
+        if r_adapt > 0.0 and NA > 0:
+            for k in range(K):
+                if Am[k] > 0:
+                    rate = Am[k] * r_adapt * (1.0 - rho_m[k])
+                    cum += rate
+                    if u < cum:
+                        mass = 1.0 - rho_m[k]
+                        uu = np.random.random() * mass
+                        cc = 0.0
+                        dest = -1
+                        for kp in range(K):
+                            if kp == k:
+                                continue
+                            cc += rho_m[kp]
+                            if uu < cc:
+                                dest = kp
+                                break
+                        if dest < 0:
+                            for kp in range(K - 1, -1, -1):
+                                if kp != k and rho_m[kp] > 0:
+                                    dest = kp
+                                    break
+                        if dest >= 0:
+                            Am[k] -= 1
+                            Am[dest] += 1
+                        done = True
+                        break
+
+                if Ap[k] > 0:
+                    rate = Ap[k] * r_adapt * (1.0 - rho_p[k])
+                    cum += rate
+                    if u < cum:
+                        mass = 1.0 - rho_p[k]
+                        uu = np.random.random() * mass
+                        cc = 0.0
+                        dest = -1
+                        for kp in range(K):
+                            if kp == k:
+                                continue
+                            cc += rho_p[kp]
+                            if uu < cc:
+                                dest = kp
+                                break
+                        if dest < 0:
+                            for kp in range(K - 1, -1, -1):
+                                if kp != k and rho_p[kp] > 0:
+                                    dest = kp
+                                    break
+                        if dest >= 0:
+                            Ap[k] -= 1
+                            Ap[dest] += 1
+                        done = True
+                        break
+
+        # Floating-point cumulative-rounding fallback: simply continue.
+        # It should be vanishingly rare and does not change state.
+    return 0, max_time
+
+
+@njit(cache=True)
+def _simulate_raw_seeded(d, probs, K, alpha, beta, kappa, n_trials,
+                         N, bound, r_adapt, tau_s, t0, max_time, seed):
+    np.random.seed(seed)
+    choices = np.empty(n_trials, dtype=np.int8)
+    rts = np.empty(n_trials, dtype=np.float64)
+    for i in range(n_trials):
+        c, tau = _simulate_one_trial(
+            d, probs, K, alpha, beta, kappa, N, bound, r_adapt, max_time
+        )
+        choices[i] = c
+        rts[i] = t0 + tau_s * tau
+    return choices, rts
+
+
+@njit(cache=True, parallel=True)
+def _build_atlas_counts(theta_bank, D, probs, Karr, rt_edges,
+                        n_sim, N, bound, r_adapt, tau_s, t0, max_time, seed_base):
+    C = theta_bank.shape[0]
+    P = D.shape[0]
+    B = rt_edges.shape[1] - 1
+    joint = np.zeros((C, P, 2 * B + 1), dtype=np.int64)
+    choice = np.zeros((C, P, 3), dtype=np.int64)  # lower, upper, timeout
+
+    for ci in prange(C):
+        alpha = theta_bank[ci, 0]
+        beta = theta_bank[ci, 1]
+        kappa = theta_bank[ci, 2]
+
+        for pj in range(P):
+            # Re-seed per candidate/problem so results are stable if thread count changes.
+            np.random.seed(seed_base + ci * 100003 + pj * 1009)
+            K = Karr[pj]
+            d = D[pj, :K]
+            p = probs[pj, :K]
+
+            for _ in range(n_sim):
+                c, tau = _simulate_one_trial(
+                    d, p, K, alpha, beta, kappa, N, bound, r_adapt, max_time
+                )
+                if c == 0:
+                    joint[ci, pj, 2 * B] += 1
