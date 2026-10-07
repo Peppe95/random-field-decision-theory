@@ -1,0 +1,5 @@
+region,label,n,n_all,score_contribution
+short_tail,Below 0.3 s,3,41022,-0.001366464402907738
+window,0.3-10 s,39446,41022,0.06337203311369677
+long_tail,Above 10 s,1573,41022,-0.12703806940027823
+all,All responses,41022,41022,-0.0650325006894892
