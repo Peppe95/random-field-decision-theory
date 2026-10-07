@@ -1,5 +1,7 @@
 # Random Field Decision Theory
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23213829.svg)](https://doi.org/10.5281/zenodo.23213829)
+
 Reproducibility materials for **Random Field Decision Theory: Deliberation through persistent and adaptive representations**, by Giuseppe M. Ferro and Didier Sornette.
 
 The repository is organized around the analyses reported in the manuscript.
@@ -82,7 +84,7 @@ A successful figure rebuild is not a refit, and a successful consistency check i
 
 ## Archival release
 
-The large numerical artifact is archived at https://doi.org/10.5281/zenodo.23213576. The first tagged software release will receive a separate Zenodo DOI. The remaining release steps are listed in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+Version 1.0.0 of the software is archived at https://doi.org/10.5281/zenodo.23213829. The large dynamic numerical artifact is archived separately at https://doi.org/10.5281/zenodo.23213576. The remaining release steps are listed in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## License
 
