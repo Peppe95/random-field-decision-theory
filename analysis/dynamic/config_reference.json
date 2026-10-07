@@ -1,0 +1,88 @@
+{
+  "base": {
+    "ddm_nuisance": 4096,
+    "rfdt_global_continuous": 96,
+    "rfdt_nuisance": 192
+  },
+  "bootstrap_reps": 10000,
+  "ddm": {
+    "absolute_series_tolerance": 1e-12,
+    "check_tolerance": 1e-14,
+    "domain_max_allowed_discrepancy": 1e-09
+  },
+  "ddm_supports": {
+    "a": [0.1, 8.0],
+    "rho": [0.05, 3.0],
+    "t0": [0.01, 0.29],
+    "vcoeff": [-100.0, 100.0],
+    "vmax": [0.01, 50.0],
+    "z": [0.02, 0.98]
+  },
+  "eb": {
+    "ftol": 1e-13,
+    "global_prediction_truncation": false,
+    "global_weights": "softmax(profile training marginal LL + discrete prior mass)",
+    "gtol": 1e-07,
+    "kkt_tolerance": 0.0001,
+    "maxiter": 600,
+    "mu_bounds": [0.0, 1.0],
+    "sd_max": 0.48,
+    "sd_min": 0.055,
+    "starts": 4
+  },
+  "expanded": {
+    "ddm_nuisance": 8192,
+    "rfdt_global_continuous": 128,
+    "rfdt_nuisance": 256
+  },
+  "models": ["RFDT", "RFDT_K0", "DDM"],
+  "package_version": "1.0.0",
+  "precision": {
+    "mc_95_halfwidth_nats_per_trial": 0.001,
+    "mc_fraction_of_participant_CI_halfwidth": 0.1,
+    "rule": "Report every predeclared comparison; never select a model by these checks.",
+    "smoothing_max_absolute_shift": 0.001,
+    "training_replica_or_grid_fraction_of_participant_CI_halfwidth": 0.25,
+    "training_replica_or_grid_max_absolute_shift": 0.005
+  },
+  "rfdt_supports": {
+    "N_eff": [80, 120, 180],
+    "alpha": [0.08, 0.92],
+    "beta": [0.2, 1.6],
+    "bound": [0.12, 0.36],
+    "kappa": [0.08, 0.9],
+    "rho": [0.05, 1.5],
+    "t0": [0.05, 0.35],
+    "tau_s": [0.75, 1.25]
+  },
+  "samples": ["primary", "sensitivity"],
+  "seeds": {
+    "bootstrap": 2026091801,
+    "ddm_nuisance": 202609132,
+    "rfdt_global": 202609133,
+    "rfdt_nuisance": 202609134
+  },
+  "simulation": {
+    "allowed_evaluation_paths": [4000, 8000, 16000],
+    "evaluation_batches": 4,
+    "evaluation_paths": 4000,
+    "evaluation_phase_start": 16,
+    "horizon": 5760.0,
+    "legacy_horizon": 90.0,
+    "train_paths": 2000,
+    "train_phases": {
+      "train_a": 0,
+      "train_b": 1
+    },
+    "unresolved_allowed": 0
+  },
+  "smoothing": {
+    "base": "uniform over physically possible cells of the 14-event partition",
+    "ddm_smoothing": false,
+    "sensitivity_masses": [0.05, 0.5, 5.0],
+    "total_pseudocount_mass": 0.5
+  },
+  "status": "Post-result corrective protocol; not preregistered confirmation",
+  "targets": ["single_click", "window"],
+  "window_interpretation": "mixture of candidate-level conditional-on-window distributions; refit on selected-window rows"
+}
