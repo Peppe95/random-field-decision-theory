@@ -1,0 +1,16 @@
+{
+  "analysis": "Choices13k external static validation of frozen RFDT-P",
+  "choice_orientation": "bRate = aggregate rate of choosing Gamble B",
+  "cv": {"fold_assignment":"seeded permutation of problem rows, round-robin 1..10; no outcomes used","fold_seed":20260911,"type":"10-fold problem CV"},
+  "likelihood_warning": "bRate*n is NOT treated as a binomial count; n is the number of subjects and each subject made 5 choices before aggregation",
+  "model_status": "RFDT-P form and parameter domain frozen after HAB22; no Choices13k outcomes are used to modify the model",
+  "predeclared_models": ["RFDT-P","RFDT-L","RFDT-P kappa=0","RFDT-P alpha=0","RFDT-P alpha=1","Power-EU logit","Linear-EU logit","TrainMean","Half"],
+  "primary_metric": "held-out problem-level MSE on bRate",
+  "rfdt_bounds": {"alpha":[0.0,1.0],"beta":[0.05,4.0],"kappa":[0.0,0.995],"lam":[0.1,8.0],"rho":[0.05,1.5]},
+  "secondary_metrics": ["RMSE","MAE","rate cross-entropy (proper score, NOT treated as a likelihood)","correlation","completeness vs 0.5 using bRate_std^2/n only as an estimated sampling-noise floor"],
+  "stimulus_representation": "exact displayed A/B distributions from c13k_problems.json; independent/product hypothetical sampling",
+  "subset": {"Amb":false,"Corr":0,"Feedback":false,"expected_n_problems":1766},
+  "training_objective": "unweighted problem-level MSE between predicted P(B) and aggregate bRate",
+  "utility": "u_rho(x)=sign(x)|x|^rho",
+  "utility_scale": "median_j sqrt(E[D_j(rho)^2])=1 over the entire frozen stimulus subset; for even n, standard median = mean of two central order statistics; stimulus-only and outcome-blind"
+}
