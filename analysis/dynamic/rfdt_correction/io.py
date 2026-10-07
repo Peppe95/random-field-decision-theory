@@ -152,19 +152,17 @@ def evidence_arrays(design,rho):
 def load_design(recovery):
     d=zip_csv(recovery,'guo_phase3bd_design.csv');d.problem_id=d.problem_id.astype(str)
     if len(d)!=63 or d.problem_id.duplicated().any():raise ValueError('Expected unique 63-problem design.')
-    rmap={v:i for i,v in enumerate(d.risky_reward.to_numpy())}
-    folds=np.array([rmap[float(x)] for x in d.risky_reward],dtype=int)%7 # overwritten below
-    f=0*folds
-    for i in range(63):f[i]=i%7
-    folds=f.astype(int)
-    old=zip_csv(recovery,'guo_phase3bd_rt_bin_edges.csv')
-    old['problem_id']=old['problem_id'].astype(str)
-    old=old.set_index('problem_id').loc[d.problem_id].reset_index()
-    cuts=[]
-    for j in range(63):
-        e=old.loc[j][['edge_0','edge_1','edge_2','edge_3','edge_4','edge_5']].to_numpy(float)
-        inner=e[(le.3)&(e>=10)];inner=np.sort(inner)
-        if len(inner)!=4 or not(.3<inner[0]<inner[-1]<10):raise ValueError('Interior cutoffs outside window.')
+    rmap={v:i for i,v in enumerate(sorted(d.risky_reward.unique()))}
+    pmap={v:i for i,v in enumerate(sorted(d.probability.unique()))}
+    if len(rmap)!=7 or len(pmap)!=9:raise ValueError('Not the 7 x 9 Guo grid.')
+    folds=np.array([(rmap[R]+pmap[p])%7 for R,p in zip(d.risky_reward,d.probability)],int)
+    if not np.array_equal(np.bincount(folds),np.full(7,9)):raise ValueError('Unbalanced modular folds.')
+    old=zip_csv(recovery,'rt_bin_edges.csv');cuts=[]
+    for pid in d.problem_id:
+        g=old[old.problem_id==pid].sort_values('bin')
+        if len(g)!=5:raise ValueError('Wrong legacy bin count for '+pid)
+        inner=g.upper.to_numpy(float)[:4]
+        if not np.all(np.diff(inner)>0) or not(.3<inner[0]<inner[-1]<10):raise ValueError('Interior cutoffs outside window.')
         cuts.append(np.r_[.3,inner,10.])
     return d,folds,np.array(cuts,float),old
 
@@ -202,9 +200,9 @@ def observations(df,design,folds,cutoffs,check_sample=None):
     if check_sample:
         expected=EXPECTED_FLOW[check_sample]
         actual=tuple(flow[k] for k in ('canonical_participants','canonical_trials','single_click_participants','single_click_trials','window_trials'))
-        if actual!=expected:raise ValueError('Sample-flow discrepancy: %s expected %s got %r'%(check_sample,expected,actual))
+        if actual!=expected:raise ValueError('Sample-flow discrepancy: %s expected %s got %s'%(check_sample,expected,actual))
     return {'frame':d,'participant_ids':pids,'choice':c,'rt':rt,'click_count':click,'bin':b,
-           'events':{'single_click':full_events,'window':window_events},'folds':folds,'flow':flow}
+            'events':{'single_click':full_events,'window':window_events},'folds':folds,'flow':flow}
 
 
 def read_bank(run,level,model):
