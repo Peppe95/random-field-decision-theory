@@ -16,24 +16,24 @@ python -m pip install -r requirements.txt
 python analysis/theory/make_theory_predictions.py
 ```
 
-This script reads no human observations or fitted empirical parameters. It writes its numerical checks to `analysis/theory/theory_checks/` and regenerates its illustrative theory figures.
+This script reads no human observations or fitted empirical parameters. It writes numerical checks under `analysis/theory/theory_checks/` and regenerates its illustrative theory figures.
 
 The saved reference diagnostics are in `analysis/theory/theory_validation.json`.
 
 ## 3. Rebuild manuscript figures from compact results
 
-No model fitting or finite-population simulation is required for these commands:
+No fitting or finite-population simulation is required:
 
 ```bash
 python figures/static/make_figure4_static.py
 python figures/dynamic/make_figures_dynamic.py
 ```
 
-The static script reads `results/static/`. The dynamic script reads only compact verified summaries under `results/dynamic/`.
+The static script reads `results/static/`. The dynamic script reads compact verified summaries under `results/dynamic/`.
 
 ## 4. Static empirical analyses
 
-The exact frozen production runners are:
+The frozen production runners are:
 
 ```bash
 python analysis/static/hab22/run_hab22_final_frozen.py --help
@@ -46,7 +46,14 @@ See `analysis/static/README.md` and `analysis/static/config_reference.json` for 
 
 ## 5. Dynamic empirical analysis
 
-The corrected command-line entry point is:
+First verify the production source:
+
+```bash
+python analysis/dynamic/verify_frozen_sources.py
+PYTHONPATH=analysis/dynamic python -m unittest discover -s analysis/dynamic/tests -v
+```
+
+The corrected entry point is:
 
 ```bash
 python analysis/dynamic/run_rfdt_guo_correction.py --help
@@ -54,15 +61,15 @@ python analysis/dynamic/run_rfdt_guo_correction.py --help
 
 Its stages are `prepare`, `validate`, `atlas`, `fit`, `precision`, `convergence`, and `package`.
 
-**Pre-release source requirement.** The runner imports the frozen `rfdt_correction` package used for the completed fits. Those modules and `tests/test_core.py` must be copied verbatim from `RFDT_Guo_corrected_analysis_code_v1.zip` and verified against `analysis/dynamic/SOURCE_HASHES.md` before a full dynamic refit is advertised as reproducible. This is tracked in GitHub issue #2.
+A full reconstruction additionally requires the upstream preprocessing and recovery inputs described by the runner and protocol files. The production calculation is large; `analysis/dynamic/config_reference.json` records the fitted banks, simulation counts, parameter supports, seeds and accuracy criteria.
 
-The production study contains:
+The completed study contains:
 - the base fit;
 - an independent training replica;
 - enlarged candidate sets;
 - independent fixed-weight evaluation of the original fits using four new batches of 4,000 paths.
 
-The exact settings are recorded in `analysis/dynamic/config_reference.json`. The numerical status, including criteria that were not attained, is recorded in `provenance/NUMERICAL_STATUS.md`.
+The numerical status, including criteria that were not attained, is recorded in `provenance/NUMERICAL_STATUS.md`.
 
 ## 6. Large dynamic numerical archive
 
