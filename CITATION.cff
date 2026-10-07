@@ -8,4 +8,12 @@ authors:
   - family-names: Sornette
     given-names: Didier
 repository-code: "https://github.com/Peppe95/random-field-decision-theory"
+url: "https://github.com/Peppe95/random-field-decision-theory"
 license: MIT
+keywords:
+  - decision theory
+  - risky choice
+  - cognitive modeling
+  - response time
+  - stochastic processes
+  - mathematical psychology
