@@ -1,0 +1,33 @@
+name: lightweight-reproducibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lightweight-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Compile public Python entry points
+        run: |
+          python -m py_compile analysis/theory/make_theory_predictions.py
+          python -m py_compile analysis/static/hab22/run_hab22_final_frozen.py
+          python -m py_compile analysis/static/choices13k/run_choices13k_external.py
+          python -m py_compile analysis/dynamic/run_rfdt_guo_correction.py
+          python -m py_compile figures/static/make_figure4_static.py
+          python -m py_compile figures/dynamic/make_figures_dynamic.py
+      - name: Run analytical checks
+        run: python analysis/theory/make_theory_predictions.py
+      - name: Rebuild summary figures
+        run: |
+          python figures/static/make_figure4_static.py
+          python figures/dynamic/make_figures_dynamic.py
