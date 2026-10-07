@@ -22,6 +22,6 @@ SHA-256:
 
 `737500db81b9da24a46d05eea4c5864a3dd4ac494470ceb38b6a74cab168dc73`
 
-This generated archive is intentionally not committed to Git. It will be deposited separately and linked from the software release.
+This generated archive is intentionally not committed to Git. Its Zenodo record is: https://doi.org/10.5281/zenodo.23213576
 
 Third-party source datasets are not part of either RFDT deposit; reproduction instructions point to their original repositories.
