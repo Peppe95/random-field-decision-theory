@@ -1,0 +1,100 @@
+                if len(idx):pred[idx,j]+=w[fold,gi]*(post[idx] @ q[:,j,:])
+    ii,jj=np.where(events>=0)
+    p=pred[ii,jj];checks=core.check_joint(p)
+    pc,pe,lj,lc,lr=core.split_scores(p,data['choice'][ii,jj],data['bin'][ii,jj])
+    frame=pd.DataFrame({'participant_id':np.array(data['participant_ids'])[ii],
+                        'problem_id':design.problem_id.to_numpy()[jj],'fold':folds[jj],
+                        'choice_risky':data['choice'][ii,jj],'rt':data['rt'][ii,jj],
+                        'click_count':data['click_count'][ii,jj], 'rt_bin':data['bin'][ii,jj],
+                        'sample':sample,'target':target,'model':model,'stage':'corrected_refit',
+                        'p_risky':pc[:,1],'p_observed_event':pe,'log_score':lj,
+                        'log_choice':lc,'log_rt_given_choice':lr})
+    for c in range(2):
+        for b in range(7):frame['q_c%d_b%d'%(c,b)]=p[:,c*7+b]
+    cq=p.reshape(-1,2,7)[np.arange(len(ii)),data['choice'][ii,jj]]/pc[np.arange(len(ii)),data['choice'][ii,jj]][:,None]
+    for b in range(7):frame['p_bin%d_given_observed_choice'%b]=cq[:,b]
+    outfile=Path(outfile);outfile.parent.mkdir(parents=True,exist_ok=True)
+    frame.to_csv(outfile,index=False,compression='gzip')
+    dump_json(outfile.with_name(outfile.name+'.checks.json'),{**checks,'rows':len(frame),
+            'n_canonical_participants':n,'n_contributing_participants':frame.participant_id.nunique(),
+            'n_globals_numerically_nonzero':len(active),'pseudo_mass':mass,
+            'weight_source':str(root),'count_batches':count_batches,
+            'window_convention':config['window_interpretation'] if target=='window' else 'unconditional coarsened RT',
+            'decomposition_error':float(np.abs(lj-lc-lr).max()),'file_sha256':sha(outfile)})
+    return frame
+
+
+def calibration(pred,outprefix):
+    p=pred
+    q=p[['q_c%d_b%d'%(c,b) for c in range(2) for b in range(7)]].to_numpy().reshape(-1,2,7)
+    rows=[]
+    for b in range(7):
+        rows.append({'bin':b,'n_observed':int((p.rt_bin==b).sum()),'n_total':len(p),
+                     'observed_fraction':float((p.rt_bin==b).mean()),
+                     'mean_joint_marginal_bin_probability':float(q[:,:,b].sum(axis=1).mean()),
+                     'mean_bin_probability_given_observed_choice':float(p['p_bin%d_given_observed_choice'%b].mean())})
+    pd.DataFrame(rows).to_csv(str(outprefix)+'_rt.csv',index=False)
+    # Calibration groups depend on predictions, not on outcome-driven bin edges.
+    group=np.minimum((p.p_risky.to_numpy()*10).astype(int),9)
+    pp=p.assign(probability_bin=group)
+    pp.groupby('probability_bin').agg(n=('p_risky','size'),mean_predicted=('p_risky','mean'),
+                                    observed_risky=('choice_risky','mean')).reset_index().to_csv(str(outprefix)+'_choice.csv',index=False)
+
+
+def compare_predictions(predA,predB,canonical_pids,reps,seed):
+    keys=['participant_id','problem_id']
+    A=predA.sort_values(keys).reset_index(drop=True);B=predB.sort_values(keys).reset_index(drop=True)
+    for col in keys+['fold','choice_risky','rt_bin','click_count','target','sample']:
+        if not np.array_equal(A[col].to_numpy(),B[col].to_numpy()):raise ValueError('Paired observations differ in '+col)
+    ds=A.log_score.to_numpy()-B.log_score.to_numpy()
+    temp=pd.DataFrame({'participant_id':A.participant_id,'delta_sum':ds})
+    part=temp.groupby('participant_id').agg(delta_sum=('delta_sum','sum'),n=('delta_sum','size')).reindex(canonical_pids).fillna(0).reset_index()
+    delta,lo,hi=core.paired_cluster_interval(part.delta_sum,part.n,reps,seed)
+    nz=part.n>0
+    summary={'sample':A['sample'].iloc[0],'target':A['target'].iloc[0],
+             'model_A':A['model'].iloc[0],'model_B':B['model'].iloc[0],
+             'n_canonical_participants':len(part),'n_contributing_participants':int(nz.sum()),'n_trials':len(A),
+             'mean_log_score_A':float(A.log_score.mean()),'mean_log_score_B':float(B.log_score.mean()),
+             'A_minus_B':delta,'ci_low':lo,'ci_high':hi,
+             'participant_A_win_fraction':float((part.loc[nz,'delta_sum']>0).mean()),
+             'choice_log_loss_A':float(-A.log_choice.mean()),'choice_log_loss_B':float(-B.log_choice.mean()),
+             'RT_log_score_A':float(A.log_rt_given_choice.mean()),'RT_log_score_B':float(B.log_rt_given_choice.mean()),
+             'choice_component':float((A.log_choice-B.log_choice).mean()),
+             'RT_component':float((A.log_rt_given_choice-B.log_rt_given_choice).mean()),
+             'brier_A':float(np.mean((A.p_risky-A.choice_risky)**2)),
+             'brier_B':float(np.mean((B.p_risky-B.choice_risky)**2))}
+    fold=[]
+    for f in range(7):
+        m=A.fold.to_numpy()==f
+        fold.append({'fold':f,'n':int(m.sum()),'difference_sum':float(ds[m].sum()),
+                     'A_minus_B':float(ds[m].mean()) if m.any() else np.nan})
+    tail=[]
+    for label,m in [('short_tail',A.rt_bin.to_numpy()==0),('window',A.rt_bin.between(1,5).to_numpy()),('long_tail',A.rt_bin.to_numpy()==6)]:
+        tail.append({'region':label,'n':int(m.sum()),'fraction':float(m.mean()),
+                     'delta_sum':float(ds[m].sum()),'contribution_per_all_trials':float(ds[m].sum()/len(ds)),
+                     'conditional_region_mean_difference':float(ds[m].mean()) if m.any() else np.nan})
+    if abs(summary['choice_component']+summary['RT_component']-delta)>2e-12:raise ArithmeticError('Aggregate decomposition error.')
+    return summary,part,pd.DataFrame(fold),pd.DataFrame(tail)
+
+
+def summarize_directory(run,predroot,outdir,config,design,folds,cuts,compute_ci=True):
+    summaries=[];outdir=Path(outdir);outdir.mkdir(parents=True,exist_ok=True)
+    for target in TARGETS:
+        for sample in SAMPLES:
+            data=load_sample(run,sample,design,folds,cuts)
+            preds={m:pd.read_csv(Path(predroot)/target/sample/('predictions_'+m+'.csv.gz')) for m in MODELS}
+            for ma,mb in [('RFDT','DDM'),('RFDT','RFDT_K0')]:
+                s,p,f,t=compare_predictions(preds[ma],preds[mb],data['participant_ids'],
+                                            config['bootstrap_reps'] if compute_ci else 200,config['seeds']['bootstrap'])
+                summaries.append(s)
+                prefix=outdir/(target+'_'+sample+'_'+ma+'_vs_'+mb)
+                p.to_csv(str(prefix)+'_participants.csv',index=False)
+                f.to_csv(str(prefix)+'_folds.csv',index=False)
+                t.to_csv(str(prefix)+'_tails.csv',index=False)
+            for model,pred in preds.items():calibration(pred,outdir/(target+'_'+sample+'_'+model))
+    table=pd.DataFrame(summaries);table.to_csv(outdir/'comparisons.csv',index=False)
+    return table
+
+
+def fit_stage(run,level='base',batch='train_a',jobs=4):
+    run,config,design,folds,cuts=read_run(run)
