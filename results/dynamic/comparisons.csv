@@ -1,0 +1,9 @@
+sample,target,comparator,original_fit,independent_refit,larger_bank,independent_evaluation
+primary,all_single_click_RTs,DDM,-0.048841,-0.051158,-0.068935,-0.065033
+primary,all_single_click_RTs,uncoupled_RFDT,0.141510,0.136415,0.136322,0.132675
+primary,0.3-10s_refitted,DDM,0.006735,0.003639,-0.027729,0.005481
+primary,0.3-10s_refitted,uncoupled_RFDT,0.125123,0.124116,0.121988,0.121583
+sensitivity,all_single_click_RTs,DDM,-0.058693,-0.059884,-0.078291,-0.074662
+sensitivity,all_single_click_RTs,uncoupled_RFDT,0.140109,0.137547,0.134859,0.132397
+sensitivity,0.3-10s_refitted,DDM,-0.000752,-0.003742,-0.034465,-0.001871
+sensitivity,0.3-10s_refitted,uncoupled_RFDT,0.125470,0.123383,0.121850,0.121833
