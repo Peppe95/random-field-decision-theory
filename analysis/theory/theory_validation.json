@@ -1,0 +1,47 @@
+{
+  "initial_curvature_checks": [
+    {"r": 0.25, "analytical": 0.20780996239016136, "numerical": 0.20780996243599525, "absolute_error": 4.583389223711265e-11},
+    {"r": 1, "analytical": 0.41267128194942815, "numerical": 0.41267128193800406, "absolute_error": 1.1424083901090398e-11},
+    {"r": 4, "analytical": 1.2321165601864954, "numerical": 1.2321165602652284, "absolute_error": 7.873302010352745e-11}
+  ],
+  "mixed_cycle": {
+    "A over B": 0.21673638044578386,
+    "B over C": 0.06411228617788177,
+    "C over A": 0.09283587802203157
+  },
+  "scope": "New analytic checks only; no empirical refitting.",
+  "max_kappa_derivative_error": 3.2003893979393183e-10,
+  "max_option_reversal_error": 0.0,
+  "finite_chain": {
+    "states": 32,
+    "max_detailed_balance_error": 6.938893903907228e-18,
+    "max_stationarity_error": 6.938893903907228e-17
+  },
+  "certainty_equivalent_expansion": [
+    {"alpha": 0.2, "beta4_scaled_remainders": [0.00394682221068832, 0.0039483059508481355, 0.003948675587894801]},
+    {"alpha": 0.5, "beta4_scaled_remainders": [0.0033399308960061023, 0.003342982141107953, 0.0033437395213775645]},
+    {"alpha": 0.8, "beta4_scaled_remainders": [0.001353791580384735, 0.0013560467744359872, 0.0013566063203351852]}
+  ],
+  "transient_example": {
+    "alpha": 0.6,
+    "beta": 4.0,
+    "kappa": 0.55,
+    "fields": [-0.1, 0.9],
+    "probabilities": [0.9, 0.1],
+    "Q0": -0.24210327179646976,
+    "A0": 0.5202360924103953,
+    "V": 0.2153003467276492,
+    "m_star": 0.3567570186585899,
+    "runs": [
+      {"r": 0.25, "max_free_energy_increase": -1.4624405242358307e-08, "m_star_error_at_s1000": 1.3322676295501878e-15, "m_star_error_at_s80": 0.0009197426603773096, "minimum_m": -0.21624592149132565},
+      {"r": 1, "max_free_energy_increase": 2.220446049250313e-16, "m_star_error_at_s1000": 1.6653345369377348e-15, "m_star_error_at_s80": 2.570562673831489e-08, "minimum_m": -0.1050371063076948},
+      {"r": 4, "max_free_energy_increase": 5.551115123125783e-16, "m_star_error_at_s1000": 1.2989609388114332e-14, "m_star_error_at_s80": 1.0118017534921364e-11, "minimum_m": -0.03653625430123697}
+    ]
+  },
+  "matched_equilibrium_examples": [
+    {"q": 0.1, "sure_utility": 0.1422566985424189, "m_star": 0.15000000000003494, "Q0": -0.3633889291808532, "V": 0.08652289359571061},
+    {"q": 0.9, "sure_utility": 0.8027678316436538, "m_star": 0.1500000000000002, "Q0": 0.4923460402167686, "V": 0.0856025030185862}
+  ],
+  "max_frozen_field_covariance_error": 2.220446049250313e-16,
+  "risk_threshold_tests": 125
+}
