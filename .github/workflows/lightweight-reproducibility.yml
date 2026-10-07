@@ -25,6 +25,10 @@ jobs:
           python -m py_compile analysis/dynamic/run_rfdt_guo_correction.py
           python -m py_compile figures/static/make_figure4_static.py
           python -m py_compile figures/dynamic/make_figures_dynamic.py
+      - name: Verify frozen dynamic sources
+        run: python analysis/dynamic/verify_frozen_sources.py
+      - name: Run dynamic unit tests
+        run: PYTHONPATH=analysis/dynamic python -m unittest discover -s analysis/dynamic/tests -v
       - name: Run analytical checks
         run: python analysis/theory/make_theory_predictions.py
       - name: Rebuild summary figures
