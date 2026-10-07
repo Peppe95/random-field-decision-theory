@@ -1,0 +1,41 @@
+{
+  "status": "frozen production implementation; no model development",
+  "rfdt_p": {
+    "utility": "sign(x)*abs(x)**rho",
+    "bounds": {
+      "alpha": [0.0, 1.0],
+      "beta": [0.05, 4.0],
+      "kappa": [0.0, 0.995],
+      "lambda": [0.1, 8.0],
+      "rho": [0.05, 1.5]
+    },
+    "normalization": "dataset-wide stimulus-only median_j sqrt(E[D_j(rho)^2]) = 1",
+    "sampling": "independent/product hypothetical sampling for the retained static tasks",
+    "readout": "logistic(lambda*m_star)"
+  },
+  "hab22": {
+    "role": "development benchmark",
+    "objective": "binary-response/binomial negative log likelihood",
+    "optimizer": "L-BFGS-B with analytic gradients",
+    "optimizer_options": {"ftol": 1e-11, "gtol": 2e-07, "maxiter": 1000, "maxls": 80},
+    "start_seed": 20260910,
+    "starts": "two fixed starts plus n_halton scrambled Halton starts; final package recommends --starts 24 and --individual-starts 4, but the output archive does not retain the executed historical CLI",
+    "task_folds": "stored crossValidation_id, 10 folds",
+    "participant_folds": "R-compatible set.seed(123), recreated within context, 5 folds",
+    "architectures": {
+      "participant_mixture": "individual RFDT-P fits on training tasks; held-out task predictions averaged over eligible training participants from that task's context",
+      "pooled_restrictions": "one shared parameter vector per crossed task-fold x participant-fold training intersection"
+    }
+  },
+  "choices13k": {
+    "role": "external validation after HAB22 freeze",
+    "subset": "Feedback=False, Amb=False, Corr=0; 1766 problems",
+    "objective": "unweighted problem-level MSE on aggregate bRate",
+    "optimizer": "L-BFGS-B with analytic gradients",
+    "optimizer_options": {"ftol": 1e-13, "gtol": 1e-08, "maxiter": 1500, "maxls": 100},
+    "fold_seed": 20260911,
+    "starts": "two fixed starts plus 32 scrambled Halton starts per model/fold",
+    "fit_seed": "20260911 + fold",
+    "folds": "seeded permutation then round-robin assignment to 10 problem folds"
+  }
+}

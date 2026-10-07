@@ -1,0 +1,17 @@
+{
+  "hab22_participant_mixture_mse": 0.0331018992051235,
+  "hab22_participant_benchmark_rank": 12,
+  "hab22_participant_benchmark_finite_entries_including_chance_baseline": 57,
+  "hab22_pooled": {
+    "RFDT-P": 0.043691055451063186,
+    "RFDT-P kappa=0": 0.044942020184,
+    "RFDT-P alpha=1": 0.046565163398,
+    "RFDT-P alpha=0": 0.047645695974,
+    "RFDT-P rho=1": 0.073505901533
+  },
+  "choices13k": {
+    "RFDT-P": 0.014601758099469432,
+    "Power-EU logit": 0.021647188700351778
+  },
+  "note": "Scores were recomputed from the frozen saved prediction outputs without refitting during the manuscript audit."
+}

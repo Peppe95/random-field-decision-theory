@@ -29,7 +29,9 @@ It should be deposited on Zenodo with the final release.
 
 ## Static analysis
 
-The static model is frozen. The exact final HAB22 and Choices13k production export will be added under `analysis/static/`; the directory already states the expected layout and data policy.
+The frozen HAB22 and Choices13k production implementation is under `analysis/static/`, with compact manuscript results under `results/static/` and Figure 4 generation under `figures/static/`.
+
+HAB22 remains the development benchmark. Choices13k is the external validation of the HAB22-frozen signed-power RFDT-P specification. The participant-mixture HAB22 benchmark and the separate pooled restriction analysis are preserved as distinct fitting architectures.
 
 ## Reproduction
 

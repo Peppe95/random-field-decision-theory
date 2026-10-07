@@ -1,10 +1,29 @@
 # Reproduction
 
-The repository separates figure reproduction from full model fitting.
+The repository separates figure/table reproduction from full model fitting.
 
 ## Figures and tables
 
 Use the compact result files under `results/` and scripts under `figures/`. This route does not rerun fitting or the finite-population simulator.
+
+## Static analysis
+
+The exact frozen production runners are:
+
+```bash
+python analysis/static/hab22/run_hab22_final_frozen.py --help
+python analysis/static/choices13k/run_choices13k_external.py --help
+```
+
+Full refits require the upstream archives listed in `DATA_SOURCES.md`; raw third-party data are not stored here.
+
+To rebuild the static manuscript figure from compact saved summaries only:
+
+```bash
+python figures/static/make_figure4_static.py
+```
+
+See `analysis/static/README.md` and `analysis/static/config_reference.json` for the frozen parameter bounds, normalization, fold construction, objectives, optimizer settings and seeds.
 
 ## Dynamic analysis
 
@@ -39,7 +58,3 @@ The release will link to its Zenodo record.
 ## Data
 
 Download source data from the locations in `DATA_SOURCES.md`. Keep local copies under `data/raw/`; that path is ignored by Git.
-
-## Static analysis
-
-The final static export should be added under `analysis/static/` without changing the frozen model, folds, or reported results.
