@@ -1,0 +1,101 @@
+        leave=np.array([get('leave_%d'%b) for b in range(nb)])
+        se=float(np.sqrt((nb-1)/nb*np.sum((leave-leave.mean())**2)))
+        hw=float(student_t.ppf(.975,nb-1)*se)
+        half=float((r.ci_high-r.ci_low)/2)
+        shifts=[abs(get('smoothing_%g'%a)-float(r.A_minus_B))
+                for a in config['smoothing']['sensitivity_masses'] if a!=.5]
+        maxshift=max(shifts,default=0.)
+        ok=(hw<=config['precision']['mc_95_halfwidth_nats_per_trial'] and
+            hw<=config['precision']['mc_fraction_of_participant_CI_halfwidth']*half and
+            maxshift<=config['precision']['smoothing_max_absolute_shift'])
+        rows.append({**{k:r[k] for k in keycols},'pooled_A_minus_B':float(r.A_minus_B),
+                     'paths_per_candidate_problem_pooled':int(paths*nb),
+                     'jackknife_MC_SE':se,'MC_t95_halfwidth':hw,
+                     'participant_bootstrap_halfwidth':half,
+                     'mean_batch_score_minus_pooled_score':float(np.mean([get('batch_%d'%b) for b in range(nb)])-r.A_minus_B),
+                     'max_fixed_weight_smoothing_shift':maxshift,'evaluation_precision_pass':bool(ok)})
+    tab=pd.DataFrame(rows);tab.to_csv(root/'precision_report.csv',index=False)
+    dump_json(root/'PRECISION_STATUS.json',{'all_pass':bool(tab.evaluation_precision_pass.all()),
+                  'scope':'Independent fixed-weight probability evaluation only; does not test training-atlas noise or bank resolution.',
+                  'batches':nb,'paths':paths,
+                  'next_prespecified_paths':allowed[level_ix+1] if level_ix+1<len(allowed) else None})
+    print(tab.to_string(index=False),flush=True)
+    return tab
+
+
+def convergence_report(run):
+    """Keep stochastic training, candidate integration, and evaluation checks separate."""
+    run,config,design,folds,cuts=read_run(run)
+    base=run/'summaries/base/train_a/comparisons.csv'
+    if not base.exists():raise RuntimeError('No completed base training-A summary.')
+    A=pd.read_csv(base);rows=[];keys=['sample','target','model_A','model_B']
+    for label,path in [('independent_training_replica',run/'summaries/base/train_b/comparisons.csv'),
+                       ('predetermined_bank_expansion',run/'summaries/expanded/train_a/comparisons.csv')]:
+        if not path.exists():
+            rows.append({'check':label,'status':'NOT_RUN','pass':False});continue
+        B=pd.read_csv(path)
+        m=A.merge(B,on=keys,suffixes=('_reference','_check'),validate='one_to_one')
+        for r in m.to_dict('records'):
+            diff=float(r['A_minus_B_check']-r['A_minus_B_reference'])
+            half=float((r['ci_high_reference']-r['ci_low_reference'])/2)
+            limit=min(config['precision']['training_replica_or_grid_max_absolute_shift'],
+                      config['precision']['training_replica_or_grid_fraction_of_participant_CI_halfwidth']*half)
+            rows.append({'check':label,**{k:r[k] for k in keys},'status':'MEASURED',
+                         'reference_A_minus_B':float(r['A_minus_B_reference']),
+                         'check_A_minus_B':float(r['A_minus_B_check']),
+                         'change':diff,'absolute_change_limit':limit,'pass':bool(abs(diff)<=limit)})
+    evals=sorted((run/'precision/base').glob('M*/precision_report.csv')) if(run/'precision/base').exists() else []
+    evaluation_pass=False
+    if evals:
+        latest=max(evals,key=lambda p:int(p.parent.name[1:]))
+        ev=pd.read_csv(latest);evaluation_pass=bool(ev.evaluation_precision_pass.all())
+    else:latest=None
+    table=pd.DataFrame(rows);table.to_csv(run/'convergence_report.csv',index=False)
+    passed=bool(evaluation_pass and all(bool(r['pass']) for r in rows))
+    dump_json(run/'CORRECTION_STATUS.json',{'numerical_checks_pass':passed,
+       'fixed_weight_evaluation_report':str(latest) if latest else None,
+       'full_production_empirical_results_have_been_run':True,
+       'note':'A passed tolerance is a practical resolution statement, not a proof of continuous-parameter convergence or model validity. '
+              'If any check fails, preserve all outputs and return the diagnostics; do not select the more favorable result.'})
+    print(table.to_string(index=False),flush=True)
+    print('Numerical checks satisfied:',passed,flush=True)
+    return passed
+
+
+def package_results(run,out,include_weights=False):
+    run,config,design,folds,cuts=read_run(run,require_validation=False)
+    out=Path(out).resolve()
+    if out.exists():raise FileExistsError(str(out)+' already exists. Choose a different output filename; historical packages are not overwritten.')
+    files=[];excluded=[]
+    for p in run.rglob('*'):
+        if not p.is_file() or p.suffix=='.tmp':continue
+        rel=str(p.relative_to(run))
+        if rel.startswith('atlases/'):
+            excluded.append(p);continue
+        if rel.startswith('fits/') and p.suffix=='.npz' and p.name.startswith('fold') and not include_weights:
+            excluded.append(p);continue
+        # Keep only pooled high-precision predictions in the compact handoff;
+        # batch/leave-out numeric arrays remain local, summaries are included.
+        if rel.startswith('precision/') and '/predictions/' in rel and '/pooled/' not in rel:
+            excluded.append(p);continue
+        files.append(p)
+    manifest=[{'path':str(p.relative_to(run)),'bytes':p.stat().st_size,'sha256':sha(p)} for p in files]
+    local=[{'path':str(p.relative_to(run)),'bytes':p.stat().st_size,
+            'reason':'raw atlas, full weights, or independent-batch prediction retained locally'} for p in excluded]
+    readme='''# Corrected Guo results\n\nRead config.json, PROTOCOL_LOCK.json, validation reports and sample_flow.csv first.\n
+These are POST-RESULT CORRECTIVE analyses, not a new preregistered confirmation.\n
+The numerical accuracy checks are separate from participant-bootstrap sampling intervals.\n
+Absent convergence_report.csv / CORRECTION_STATUS.json means the follow-up numerical checks are not complete.\n
+Full conditional nuisance posterior weights and raw simulation counts are retained in the local run directory.\n
+LOCAL_ARTIFACT_INVENTORY.csv lists them. Do not delete that directory.\n'''
+    out.parent.mkdir(parents=True,exist_ok=True)
+    with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=5) as z:
+        for p in files:z.write(p,str(p.relative_to(run)))
+        z.writestr('PACKAGE_README.md',readme)
+        z.writestr('PACKAGE_MANIFEST.csv',pd.DataFrame(manifest).to_csv(index=False))
+        z.writestr('LOCAL_ARTIFACT_INVENTORY.csv',pd.DataFrame(local).to_csv(index=False))
+        # Include inherited full source as provenance without importing it.
+        for p in (ROOT/'legacy').iterdir():
+            if p.is_file():z.write(p,'legacy_source/'+p.name)
+    print('Wrote:',out,'(%.1f MB)'%(out.stat().st_size/1e6),flush=True)
+    return out
