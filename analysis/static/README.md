@@ -19,12 +19,12 @@ For every candidate `rho`, comparative evidence uses the stimulus-only scale
 
 ## Layout
 
-- `production_code.zip` — byte-for-byte final HAB22 and Choices13k runners, imported modules, saved fold assignments, analysis specifications, hashes, and requirements.
-- `extract_production_code.py` — extracts that archive under `analysis/static/`, recreating the `hab22/` and `choices13k/` source trees.
-- `../results/static/` — compact result tables and figure inputs only; no participant-level third-party data.
-- `../figures/static/` — Figure 4 generation from the compact saved inputs.
+- `hab22/` — exact final runner, imported RFDT module, RData reader, saved analysis specification and aggregate fold accounting.
+- `choices13k/` — exact external-validation runner, its imported RFDT module, saved analysis specification and fold accounting.
+- `../../results/static/` — compact result tables and Figure 4 inputs only; no participant-level third-party data.
+- `../../figures/static/` — Figure 4 generation from those compact inputs.
 
-Inside the production archive, the two `rfdt_power.py` files are retained separately on purpose. The Choices13k version contains the even-sample median handling required by the 1,766-problem design.
+The two `rfdt_power.py` files are retained separately on purpose. The Choices13k version contains the even-sample median handling required by the 1,766-problem design.
 
 ## Dependencies
 
@@ -48,7 +48,7 @@ python analysis/static/hab22/run_hab22_final_frozen.py \
   --individual --individual-starts 4
 ```
 
-This is the final package's recommended command. The saved HAB22 result archive does not retain the historical command line or per-start logs, so the exact executed `--individual-starts` flag cannot be independently certified from the output alone. The production code, saved parameters and predictions are the authoritative record.
+This is the final package's recommended command. The saved HAB22 result archive does not retain the historical command line or per-start logs, so the exact executed `--individual-starts` flag cannot be independently certified from the output alone. The production code and frozen saved predictions/results are the authoritative record.
 
 Choices13k production entry point:
 
@@ -60,8 +60,6 @@ python analysis/static/choices13k/run_choices13k_external.py \
   --jobs 10 --starts 32
 ```
 
-The Choices13k optimizer audit confirms the fitted start set used for the saved results.
-
 ## Objectives and optimizer
 
 ### HAB22
@@ -70,11 +68,11 @@ The Choices13k optimizer audit confirms the fitted start set used for the saved 
 - Optimizer: L-BFGS-B with analytic gradients.
 - `ftol=1e-11`, `gtol=2e-7`, `maxiter=1000`, `maxls=80`.
 - Two fixed starts plus scrambled Halton starts; seed `20260910`.
-- Task folds: stored `crossValidation_id` (10 folds).
-- Participant folds: exact Plonsky recreation within context using R-compatible `set.seed(123)`.
+- Task folds: upstream stored `crossValidation_id` (10 folds).
+- Participant folds: exact Plonsky recreation within context using the embedded R-compatible `set.seed(123)` implementation.
 - Participant-mixture benchmark and pooled restrictions are **different fitting architectures** and must not be mixed.
 
-Participant-level fold identifiers are not committed because they are participant-level third-party data. The runner reconstructs them exactly from the upstream source. `hab22_participant_fold_counts.csv` records only aggregate fold counts.
+Participant-level fold identifiers, predictions and parameter estimates are not committed. The runner reconstructs the folds from the upstream archive. `hab22_participant_fold_counts.csv` records aggregate fold counts only.
 
 ### Choices13k
 
@@ -84,15 +82,14 @@ Participant-level fold identifiers are not committed because they are participan
 - `ftol=1e-13`, `gtol=1e-8`, `maxiter=1500`, `maxls=100`.
 - Two fixed starts plus 32 scrambled Halton starts per model/fold.
 - Fold seed: `20260911`; fold/model fit seed is `20260911 + fold`.
-- Ten deterministic problem folds.
+- Ten deterministic problem folds formed by seeded permutation then round-robin assignment.
 
 ## Reproducing manuscript tables and Figure 4
 
-No fitting is needed. Use the committed compact summaries:
+No fitting is needed:
 
 ```bash
 python figures/static/make_figure4_static.py
 ```
 
-The manuscript scores are recorded in `results/static/table_B1_hab22_selected_scores.csv`
-and `results/static/table_B2_static_restrictions.csv`.
+The manuscript scores are in `results/static/table_B1_hab22_selected_scores.csv` and `results/static/table_B2_static_restrictions.csv`.
